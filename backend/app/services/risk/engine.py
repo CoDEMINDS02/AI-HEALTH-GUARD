@@ -1,0 +1,53 @@
+from app.core.constants import DISCLAIMER_TEXT
+from app.schemas.analysis import AnalysisResultSchema, RiskLevel
+from app.services.risk.red_flags import SafetyAssessment
+
+RISK_ORDER: dict[str, int] = {"LOW": 0, "MODERATE": 1, "HIGH": 2}
+
+ESCALATION_STEP = (
+    "URGENT: One or more warning signs were detected in what you described. Please seek urgent "
+    "medical attention now rather than waiting."
+)
+
+
+def max_risk(a: str, b: str) -> RiskLevel:
+    return RISK_ORDER[a] if RISK_ORDER[a] >= RISK_ORDER[b] else RISK_ORDER[b]
+
+
+def apply_safety_layer(
+    analysis: AnalysisResultSchema,
+    assessment: SafetyAssessment,
+) -> AnalysisResultSchema:
+    """Deterministically escalate the AI assessment when configured red flags are present.
+
+    The safety layer can only raise the risk level, never lower it.
+    """
+
+    result = analysis.model_copy()
+
+    for rule in assessment.triggered:
+        flag_text = f"{rule.label} - {rule.guidance}"
+        if not any(rule.label.lower() in existing.lower() for existing in result.red_flags):
+            result.red_flags.append(flag_text)
+
+    if assessment.has_red_flags:
+        if result.risk_level != "HIGH":
+            result.risk_level = "HIGH"
+            result.safety_override = True
+        if not any("urgent" in step.lower() for step in result.recommended_next_steps):
+            result.recommended_next_steps.insert(0, ESCALATION_STEP)
+    else:
+        result.safety_override = False
+        result.recommended_next_steps = [
+            step for step in result.recommended_next_steps if step != ESCALATION_STEP
+        ]
+
+    if not result.disclaimer:
+        result.disclaimer = DISCLAIMER_TEXT
+    return result
+
+
+def finalize_risk(ai_risk_level: str, assessment: SafetyAssessment) -> RiskLevel:
+    if assessment.has_red_flags:
+        return "HIGH"
+    return ai_risk_level  # type: ignore[return-value]
