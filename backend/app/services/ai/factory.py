@@ -3,12 +3,14 @@ from app.core.errors import ConfigurationError
 from app.services.ai.base import AIProvider
 from app.services.ai.demo_provider import DemoAIProvider
 from app.services.ai.openai_compatible import OpenAICompatibleProvider
+from app.services.ai.qwen_provider import QwenProvider
 
 
 PROVIDER_REGISTRY: dict[str, type[AIProvider]] = {
     "demo": DemoAIProvider,
     "openai": OpenAICompatibleProvider,
     "openai-compatible": OpenAICompatibleProvider,
+    "qwen": QwenProvider,
 }
 
 

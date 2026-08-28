@@ -110,8 +110,10 @@ class DemoAIProvider(AIProvider):
         elif severity >= 5 or duration_contains_weeks(duration):
             risk_level = "MODERATE"
 
+        article = "an" if onset[:1].lower() in "aeiou" else "a"
+        duration_display = duration if any(c.isalpha() for c in duration) else f"{duration} day(s)"
         observations = [
-            f"Reported severity is {severity}/10 with an {onset} onset over {duration}.",
+            f"Reported severity is {severity}/10 with {article} {onset} onset over {duration_display}.",
             f"{len(answers)} follow-up answer(s) were included in this assessment." if answers
             else "No follow-up answers were provided; the assessment relies on initial symptom data only.",
         ]
