@@ -105,13 +105,13 @@ class DemoAIProvider(AIProvider):
             }]
 
         risk_level = "LOW"
-        if severity >= 8 or onset == "sudden" and severity >= 7:
+        if (severity >= 8) or (onset == "sudden" and severity >= 7):
             risk_level = "HIGH"
         elif severity >= 5 or duration_contains_weeks(duration):
             risk_level = "MODERATE"
 
         article = "an" if onset[:1].lower() in "aeiou" else "a"
-        duration_display = duration if any(c.isalpha() for c in duration) else f"{duration} day(s)"
+        duration_display = format_duration(duration)
         observations = [
             f"Reported severity is {severity}/10 with {article} {onset} onset over {duration_display}.",
             f"{len(answers)} follow-up answer(s) were included in this assessment." if answers
@@ -183,6 +183,14 @@ class DemoAIProvider(AIProvider):
 def duration_contains_weeks(duration_text: str) -> bool:
     lowered = duration_text.lower()
     return "week" in lowered or "month" in lowered
+
+
+def format_duration(duration: str) -> str:
+    """Presentation helper: bare numbers get a correctly pluralized day unit."""
+    text = duration.strip()
+    if any(c.isalpha() for c in text):
+        return text
+    return "1 day" if text == "1" else f"{text} days"
 
 
 def build_next_steps(risk_level: str) -> list[str]:

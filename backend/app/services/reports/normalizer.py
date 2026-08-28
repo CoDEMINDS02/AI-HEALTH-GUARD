@@ -9,6 +9,13 @@ LAB_LINE_RE = re.compile(
     r"(?P<rest>.*)$"
 )
 
+# Column-layout alternative, e.g. "Hemoglobin 13.5 g/dL 12.0-16.0".
+WS_LAB_LINE_RE = re.compile(
+    r"^\s*(?P<name>[A-Za-z][A-Za-z0-9 ()/%\-\.,]{0,48}?)\s+"
+    r"(?P<value>[+-]?\d+(?:\.\d+)?)\s*"
+    r"(?P<rest>\S.*)$"
+)
+
 RANGE_RE = re.compile(
     r"(?P<lo>[+-]?\d+(?:\.\d+)?)\s*(?:-|–|to)\s*(?P<hi>[+-]?\d+(?:\.\d+)?)"
 )
@@ -43,6 +50,47 @@ def compute_flag(value: float | None, reference: str | None) -> str:
     return "normal"
 
 
+UNIT_TOKEN_RE = re.compile(r"^[a-zA-Zµ%°/\^\*\d\.\-]+$")
+
+
+def parse_ws_line(line: str) -> LabFinding | None:
+    """Parse a whitespace-column lab line such as ``Hemoglobin 13.5 g/dL 12.0-16.0``.
+
+    A reference range is required: it is the strongest signal separating genuine
+    column-layout lab rows from ordinary prose that happens to contain numbers.
+    Returns None when the line does not qualify.
+    """
+
+    match = WS_LAB_LINE_RE.match(line)
+    if not match:
+        return None
+
+    rest = match.group("rest") or ""
+    range_match = RANGE_RE.search(rest)
+    if not range_match:
+        return None
+
+    reference = f"{range_match.group('lo')}-{range_match.group('hi')}"
+    prefix = rest[: range_match.start()].strip().rstrip("([").strip()
+
+    unit = None
+    if prefix:
+        token = prefix.split()[0]
+        if UNIT_TOKEN_RE.fullmatch(token):
+            unit = token
+
+    value_str = match.group("value")
+    numeric_value = float(value_str)
+    return LabFinding(
+        name=match.group("name").strip()[:120],
+        value=value_str,
+        numeric_value=numeric_value,
+        unit=(unit[:24] if unit else None),
+        reference_range=reference,
+        flag=compute_flag(numeric_value, reference),
+    )
+
+
 def normalize_report(text: str) -> ReportFindings:
     findings: list[LabFinding] = []
     notes: list[str] = []
@@ -58,29 +106,32 @@ def normalize_report(text: str) -> ReportFindings:
             continue
 
         match = LAB_LINE_RE.match(line)
-        if not match:
+        if match:
+            name = match.group("name").strip().rstrip(":").strip()
+            value_str = match.group("value")
+            unit = (match.group("unit") or "").strip() or None
+            rest = match.group("rest") or ""
+
+            if unit and unit.lower() in {"ref", "reference", "range", "rr"}:
+                unit = None
+
+            reference = parse_reference_range(rest)
+            numeric_value = float(value_str)
+            findings.append(
+                LabFinding(
+                    name=name[:120],
+                    value=value_str,
+                    numeric_value=numeric_value,
+                    unit=(unit[:24] if unit else None),
+                    reference_range=reference,
+                    flag=compute_flag(numeric_value, reference),
+                )
+            )
             continue
 
-        name = match.group("name").strip().rstrip(":").strip()
-        value_str = match.group("value")
-        unit = (match.group("unit") or "").strip() or None
-        rest = match.group("rest") or ""
-
-        if unit and unit.lower() in {"ref", "reference", "range", "rr"}:
-            unit = None
-
-        reference = parse_reference_range(rest)
-        numeric_value = float(value_str)
-        findings.append(
-            LabFinding(
-                name=name[:120],
-                value=value_str,
-                numeric_value=numeric_value,
-                unit=(unit[:24] if unit else None),
-                reference_range=reference,
-                flag=compute_flag(numeric_value, reference),
-            )
-        )
+        ws_finding = parse_ws_line(line)
+        if ws_finding is not None:
+            findings.append(ws_finding)
 
     flagged_count = sum(1 for f in findings if f.flag in ("high", "low", "abnormal"))
     summary = (

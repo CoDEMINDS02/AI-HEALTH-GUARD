@@ -52,6 +52,19 @@ class TestDemoProvider:
         joined = " ".join(result.possible_concerns + [result.summary]).lower()
         assert "you have been diagnosed" not in joined
 
+    def test_duration_singular_plural_formatting(self):
+        def observation_for(duration_text):
+            payload = {
+                "health_profile": {"age": 30, "sex": "male"},
+                "symptoms": self.symptom_context(duration_text=duration_text),
+            }
+            return self.provider.analyze_health_information(payload).observations[0]
+
+        assert "over 1 day." in observation_for("1")
+        assert "over 2 days." in observation_for("2")
+        assert "over 1 week." in observation_for("1 week")
+        assert "over 2 weeks." in observation_for("2 weeks")
+
     def test_report_explanation_handles_empty_findings(self):
         text = self.provider.explain_medical_report("", None)
         assert "No structured values" in text

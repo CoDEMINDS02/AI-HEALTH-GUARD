@@ -50,57 +50,71 @@ export default function SymptomsPage() {
   }
 
   return (
-    <div>
+    <div className="fade-in">
       <Stepper current={1} />
       <div className="card">
-        <h2>Symptom assessment</h2>
-        <p style={{ color: 'var(--muted)' }}>
-          Example: “Fever, headache and weakness for 3 days.”
+        <h2>What are you experiencing?</h2>
+        <p style={{ color: 'var(--text-2)' }}>
+          Describe your symptoms in your own words. Example: “Fever, headache and weakness for 3
+          days.”
         </p>
 
-        {error && <div className="error-box">{error}</div>}
+        {error && <div className="error-box" role="alert">{error}</div>}
 
         <form onSubmit={handleSubmit}>
-          <div className="field">
-            <label htmlFor="primary">Primary symptoms <span className="hint">(comma separated)</span></label>
-            <input id="primary" type="text" value={primary} onChange={(e) => setPrimary(e.target.value)}
-                   placeholder="e.g. fever, headache" required />
-          </div>
-
-          <div className="field">
-            <label htmlFor="description">Describe what you are feeling</label>
-            <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)}
-                      placeholder="When did it start? What does it feel like? Anything that makes it better or worse?" />
-          </div>
-
-          <div className="form-grid">
+          <div className="form-section">
+            <div className="form-section-title">Your symptoms</div>
             <div className="field">
-              <label htmlFor="duration">Duration</label>
-              <input id="duration" type="text" value={duration} onChange={(e) => setDuration(e.target.value)}
-                     placeholder="e.g. 3 days" />
+              <label htmlFor="primary">Primary symptoms <span className="hint">(comma separated)</span></label>
+              <input id="primary" type="text" value={primary} onChange={(e) => setPrimary(e.target.value)}
+                     placeholder="e.g. fever, headache" required />
             </div>
+
             <div className="field">
-              <label htmlFor="onset">Onset</label>
-              <select id="onset" value={onset} onChange={(e) => setOnset(e.target.value)}>
-                <option value="sudden">Sudden</option>
-                <option value="gradual">Gradual</option>
-              </select>
+              <label htmlFor="description">Describe what you are feeling</label>
+              <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)}
+                        placeholder="When did it start? What does it feel like? Anything that makes it better or worse?" />
+            </div>
+
+            <div className="field">
+              <label htmlFor="additional">Additional symptoms <span className="hint">(comma separated, optional)</span></label>
+              <input id="additional" type="text" value={additional} onChange={(e) => setAdditional(e.target.value)}
+                     placeholder="e.g. chills, sore throat" />
             </div>
           </div>
 
-          <div className="field">
-            <label htmlFor="severity">Severity (1 = barely noticeable · 10 = unbearable)</label>
-            <div className="range-wrap">
-              <input id="severity" type="range" min="1" max="10" value={severity}
-                     onChange={(e) => setSeverity(e.target.value)} />
-              <span className="severity-value">{severity}/10</span>
+          <div className="form-section">
+            <div className="form-section-title">Details</div>
+            <div className="form-grid">
+              <div className="field">
+                <label htmlFor="duration">Duration</label>
+                <input id="duration" type="text" value={duration} onChange={(e) => setDuration(e.target.value)}
+                       placeholder="e.g. 3 days" />
+              </div>
+              <div className="field">
+                <label htmlFor="onset">Onset</label>
+                <select id="onset" value={onset} onChange={(e) => setOnset(e.target.value)}>
+                  <option value="sudden">Sudden</option>
+                  <option value="gradual">Gradual</option>
+                </select>
+              </div>
             </div>
-          </div>
 
-          <div className="field">
-            <label htmlFor="additional">Additional symptoms <span className="hint">(comma separated, optional)</span></label>
-            <input id="additional" type="text" value={additional} onChange={(e) => setAdditional(e.target.value)}
-                   placeholder="e.g. chills, sore throat" />
+            <div className="field">
+              <label htmlFor="severity">
+                Severity <span className="hint">(1 = barely noticeable · 10 = unbearable)</span>
+              </label>
+              <div className="range-wrap">
+                <input id="severity" type="range" min="1" max="10" value={severity}
+                       onChange={(e) => setSeverity(e.target.value)}
+                       aria-valuetext={`${severity} out of 10`} />
+                <span className="severity-value">{severity}/10</span>
+              </div>
+              <div className="range-labels" aria-hidden="true">
+                <span>Mild</span>
+                <span>Severe</span>
+              </div>
+            </div>
           </div>
 
           <div className="btn-row btn-row-end">

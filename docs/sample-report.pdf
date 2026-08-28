@@ -1,0 +1,59 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R /F2 6 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 855 >>
+stream
+BT
+/F2 12 Tf
+1 0 0 1 60 740 Tm (AI HealthGuard - Sample Laboratory Report) Tj
+/F1 11 Tf
+1 0 0 1 60 716 Tm (SYNTHETIC DEMO DATA - for demonstration only. Not a real patient result.) Tj
+/F2 12 Tf
+1 0 0 1 60 668 Tm (Complete Blood Count) Tj
+/F1 11 Tf
+1 0 0 1 60 644 Tm (Hemoglobin: 13.5 g/dL \(12.0-16.0\)) Tj
+/F1 11 Tf
+1 0 0 1 60 620 Tm (WBC: 7.2 x10^9/L \(4.0-11.0\)) Tj
+/F1 11 Tf
+1 0 0 1 60 596 Tm (Platelets: 250 x10^9/L \(150-400\)) Tj
+/F2 12 Tf
+1 0 0 1 60 548 Tm (Basic Metabolic Panel) Tj
+/F1 11 Tf
+1 0 0 1 60 524 Tm (Glucose: 105 mg/dL \(70-100\)) Tj
+/F1 11 Tf
+1 0 0 1 60 476 Tm (Note: All values in this document are synthetic and were created for) Tj
+/F1 11 Tf
+1 0 0 1 60 452 Tm (the AI HealthGuard demonstration. Interpretation of real laboratory) Tj
+/F1 11 Tf
+1 0 0 1 60 428 Tm (results must be done by a qualified healthcare professional.) Tj
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000251 00000 n 
+0000000321 00000 n 
+0000001227 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+1302
+%%EOF

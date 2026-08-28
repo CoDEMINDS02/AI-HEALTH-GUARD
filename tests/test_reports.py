@@ -13,6 +13,13 @@ Glucose: 92 mg/dL (70-99)
 Impression: Mild anemia noted.
 """
 
+WS_LAB_REPORT_TEXT = """Complete Blood Count
+Hemoglobin 13.5 g/dL 12.0-16.0
+WBC 12.8 x10^3/uL 4.0-11.0
+Glucose 92 mg/dL 70-99
+Platelets 210 x10^3/uL 150-400
+"""
+
 
 class TestReportNormalization:
     def test_extracts_lab_values_with_units(self):
@@ -47,6 +54,51 @@ class TestReportNormalization:
     def test_summary_mentions_counts(self):
         findings = normalize_report(LAB_REPORT_TEXT)
         assert "Extracted 4 structured value(s)" in findings.summary
+
+
+class TestWhitespaceColumnNormalization:
+    def test_extracts_whitespace_columns_with_units(self):
+        findings = normalize_report(WS_LAB_REPORT_TEXT)
+        by_name = {f.name: f for f in findings.findings}
+        assert len(findings.findings) == 4
+        assert by_name["Hemoglobin"].value == "13.5"
+        assert by_name["Hemoglobin"].unit == "g/dL"
+        assert by_name["Hemoglobin"].reference_range == "12.0-16.0"
+        assert by_name["Hemoglobin"].flag == "normal"
+
+    def test_flags_high_in_whitespace_format(self):
+        findings = normalize_report(WS_LAB_REPORT_TEXT)
+        by_name = {f.name: f for f in findings.findings}
+        assert by_name["WBC"].flag == "high"
+        assert by_name["Glucose"].flag == "normal"
+        assert by_name["Platelets"].flag == "normal"
+
+    def test_whitespace_line_without_reference_range_is_ignored(self):
+        findings = normalize_report("Hemoglobin 13.5 g/dL\n")
+        assert findings.findings == []
+
+    def test_prose_containing_numbers_is_not_extracted(self):
+        findings = normalize_report("I have had fever 3 days and feel tired\n")
+        assert findings.findings == []
+
+    def test_mixed_formats_are_both_extracted(self):
+        mixed = (
+            "Hemoglobin: 9.0 g/dL (13.0-17.0)\n"
+            "WBC 5.0 x10^3/uL 4.0-11.0\n"
+        )
+        findings = normalize_report(mixed)
+        by_name = {f.name: f for f in findings.findings}
+        assert by_name["Hemoglobin"].flag == "low"
+        assert by_name["Hemoglobin"].unit == "g/dL"
+        assert by_name["WBC"].flag == "normal"
+
+    def test_tab_separated_columns_are_extracted(self):
+        findings = normalize_report("Glucose\t105\tmg/dL\t70-100\n")
+        assert len(findings.findings) == 1
+        finding = findings.findings[0]
+        assert finding.name == "Glucose"
+        assert finding.unit == "mg/dL"
+        assert finding.flag == "high"
 
 
 def make_blank_pdf_bytes() -> bytes:

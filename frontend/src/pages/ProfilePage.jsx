@@ -46,53 +46,60 @@ export default function ProfilePage() {
   }
 
   return (
-    <div>
+    <div className="fade-in">
       <Stepper current={0} />
       <div className="card">
-        <h2>Health profile</h2>
-        <p style={{ color: 'var(--muted)' }}>
-          Only what is needed to contextualize your symptoms. No name, address, or contact details.
+        <h2>Tell us about yourself</h2>
+        <p style={{ color: 'var(--text-2)' }}>
+          A little context helps tailor the assessment. No name, address, or contact details —
+          this information stays on your device.
         </p>
 
-        {error && <div className="error-box">{error}</div>}
+        {error && <div className="error-box" role="alert">{error}</div>}
 
         <form onSubmit={handleSubmit}>
-          <div className="form-grid">
-            <div className="field">
-              <label htmlFor="age">Age</label>
-              <input id="age" type="number" min="1" max="120" value={age}
-                     onChange={(e) => setAge(e.target.value)} placeholder="e.g. 34" required />
-            </div>
-            <div className="field">
-              <label htmlFor="sex">Sex / gender</label>
-              <select id="sex" value={sex} onChange={(e) => setSex(e.target.value)}>
-                <option value="female">Female</option>
-                <option value="male">Male</option>
-                <option value="other">Other</option>
-                <option value="prefer_not_to_say">Prefer not to say</option>
-              </select>
+          <div className="form-section">
+            <div className="form-section-title">About you</div>
+            <div className="form-grid">
+              <div className="field">
+                <label htmlFor="age">Age</label>
+                <input id="age" type="number" min="1" max="120" value={age}
+                       onChange={(e) => setAge(e.target.value)} placeholder="e.g. 34" required />
+              </div>
+              <div className="field">
+                <label htmlFor="sex">Sex / gender</label>
+                <select id="sex" value={sex} onChange={(e) => setSex(e.target.value)}>
+                  <option value="female">Female</option>
+                  <option value="male">Male</option>
+                  <option value="other">Other</option>
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          <div className="field">
-            <label htmlFor="conditions">Known medical conditions <span className="hint">(comma separated)</span></label>
-            <input id="conditions" type="text" value={conditions} onChange={(e) => setConditions(e.target.value)}
-                   placeholder="e.g. asthma, type 2 diabetes — or leave blank" />
-          </div>
-          <div className="field">
-            <label htmlFor="allergies">Allergies <span className="hint">(comma separated)</span></label>
-            <input id="allergies" type="text" value={allergies} onChange={(e) => setAllergies(e.target.value)}
-                   placeholder="e.g. penicillin, peanuts — or leave blank" />
-          </div>
-          <div className="field">
-            <label htmlFor="medications">Current medications <span className="hint">(comma separated)</span></label>
-            <input id="medications" type="text" value={medications} onChange={(e) => setMedications(e.target.value)}
-                   placeholder="e.g. metformin — or leave blank" />
-          </div>
-          <div className="field">
-            <label htmlFor="history">Other relevant medical history <span className="hint">(optional)</span></label>
-            <textarea id="history" value={history} onChange={(e) => setHistory(e.target.value)}
-                      placeholder="Surgeries, family history, recent travel…" />
+          <div className="form-section">
+            <div className="form-section-title">Medical background <span className="hint" style={{ textTransform: 'none', letterSpacing: 0 }}>(all optional)</span></div>
+            <div className="field">
+              <label htmlFor="conditions">Known medical conditions <span className="hint">(comma separated)</span></label>
+              <input id="conditions" type="text" value={conditions} onChange={(e) => setConditions(e.target.value)}
+                     placeholder="e.g. asthma, type 2 diabetes — or leave blank" />
+            </div>
+            <div className="field">
+              <label htmlFor="allergies">Allergies <span className="hint">(comma separated)</span></label>
+              <input id="allergies" type="text" value={allergies} onChange={(e) => setAllergies(e.target.value)}
+                     placeholder="e.g. penicillin, peanuts — or leave blank" />
+            </div>
+            <div className="field">
+              <label htmlFor="medications">Current medications <span className="hint">(comma separated)</span></label>
+              <input id="medications" type="text" value={medications} onChange={(e) => setMedications(e.target.value)}
+                     placeholder="e.g. metformin — or leave blank" />
+            </div>
+            <div className="field">
+              <label htmlFor="history">Other relevant medical history <span className="hint">(optional)</span></label>
+              <textarea id="history" value={history} onChange={(e) => setHistory(e.target.value)}
+                        placeholder="Surgeries, family history, recent travel…" />
+            </div>
           </div>
 
           <div className="btn-row btn-row-end">

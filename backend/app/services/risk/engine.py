@@ -1,17 +1,11 @@
 from app.core.constants import DISCLAIMER_TEXT
-from app.schemas.analysis import AnalysisResultSchema, RiskLevel
+from app.schemas.analysis import AnalysisResultSchema
 from app.services.risk.red_flags import SafetyAssessment
-
-RISK_ORDER: dict[str, int] = {"LOW": 0, "MODERATE": 1, "HIGH": 2}
 
 ESCALATION_STEP = (
     "URGENT: One or more warning signs were detected in what you described. Please seek urgent "
     "medical attention now rather than waiting."
 )
-
-
-def max_risk(a: str, b: str) -> RiskLevel:
-    return RISK_ORDER[a] if RISK_ORDER[a] >= RISK_ORDER[b] else RISK_ORDER[b]
 
 
 def apply_safety_layer(
@@ -45,9 +39,3 @@ def apply_safety_layer(
     if not result.disclaimer:
         result.disclaimer = DISCLAIMER_TEXT
     return result
-
-
-def finalize_risk(ai_risk_level: str, assessment: SafetyAssessment) -> RiskLevel:
-    if assessment.has_red_flags:
-        return "HIGH"
-    return ai_risk_level  # type: ignore[return-value]

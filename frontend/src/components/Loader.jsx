@@ -1,8 +1,9 @@
-export default function Loader({ message = 'Working…' }) {
+export default function Loader({ message = 'Working…', title }) {
   return (
-    <div className="loading-wrap">
+    <div className="loading-wrap" role="status" aria-live="polite">
       <div className="spinner" aria-hidden="true" />
-      <p>{message}</p>
+      {title && <div className="loading-title">{title}</div>}
+      <div className="loading-sub">{message}</div>
     </div>
   )
 }

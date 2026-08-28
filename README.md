@@ -38,7 +38,7 @@ about any condition, or discourage seeking care. All output uses cautious wordin
 | Health profile | Age, sex, conditions, allergies, medications, brief history only |
 | Symptom intake | Primary/additional symptoms, description, duration, severity 1–10, onset |
 | Follow-up questions | Provider-generated, capped count, stored with answers |
-| Medical report upload | PDF text extraction → normalized lab values; images accepted without fake OCR |
+| Medical report upload | PDF text extraction → normalized lab values (colon/equals or whitespace-column layouts); images accepted without fake OCR |
 | Structured analysis | Strict JSON contract validated by Pydantic; malformed AI output never reaches the UI |
 | Deterministic safety engine | Regex red-flag rules override AI risk level upward, never downward |
 | Results dashboard | Risk level, summary, concerns, red flags, next steps, questions for your doctor |
@@ -58,9 +58,10 @@ Optional Medical Report ─────┤        ├── PDF parser + lab nor
                              ▼        │
                   Combined Analysis Request    │
                              ▼                 │
-                    AIProvider abstraction ────┤── DemoAIProvider (offline)
-                       (swap vendors freely)   └── OpenAICompatibleProvider
-                             ▼                        (Qwen later)
+                    AIProvider abstraction ────┤── DemoAIProvider (offline, no keys)
+                       (swap vendors freely)   ├── QwenProvider (Alibaba Cloud DashScope)
+                                               └── OpenAICompatibleProvider (any /chat/completions endpoint)
+                             ▼
                   Safety / Risk Layer  ← deterministic red-flag rules
                              ▼
                 Structured Health Assessment  (Pydantic-validated JSON)
@@ -77,13 +78,13 @@ and injects explicit "seek urgent care" guidance.
 
 - **Frontend:** React 18, Vite, React Router, hand-written CSS (no heavy UI deps)
 - **Backend:** Python 3.10+, FastAPI, Pydantic v2 (+ pydantic-settings), SQLAlchemy 2, Uvicorn
-- **AI:** provider abstraction — `DemoAIProvider` (offline, deterministic) and
-  `OpenAICompatibleProvider` (any `/chat/completions` compatible endpoint). **Alibaba Cloud Qwen
-  will be integrated as the production provider behind this same interface** (see
-  [docs/qwen-integration.md](docs/qwen-integration.md)).
+- **AI:** provider abstraction — `DemoAIProvider` (offline, deterministic), `QwenProvider`
+  (Alibaba Cloud DashScope via the OpenAI-compatible API), and `OpenAICompatibleProvider` for
+  any `/chat/completions` endpoint (see [docs/qwen-integration.md](docs/qwen-integration.md))
 - **Reports:** pypdf text extraction + regex lab-value normalization
+  (`Name: value (lo-hi)` and whitespace-column layouts)
 - **Database:** SQLite via SQLAlchemy ORM
-- **Tests:** pytest + FastAPI TestClient (67 tests)
+- **Tests:** pytest + FastAPI TestClient (73 tests)
 
 ## Project structure
 
@@ -107,7 +108,7 @@ ai-healthguard/
 │   │   ├── models/       # SQLAlchemy: HealthProfile, AnalysisSession, SymptomInput, Report, AnalysisResult
 │   │   ├── schemas/      # Pydantic request/response + AI output contract
 │   │   ├── services/
-│   │   │   ├── ai/       # base, factory, demo_provider, openai_compatible, prompts, parsing
+│   │   │   ├── ai/       # base, factory, demo_provider, qwen_provider, openai_compatible, prompts, parsing
 │   │   │   ├── symptoms/
 │   │   │   ├── reports/  # pdf_parser, normalizer, service
 │   │   │   ├── risk/     # red_flags (rules), engine (override logic)
@@ -115,7 +116,7 @@ ai-healthguard/
 │   │   └── main.py
 │   ├── requirements.txt / requirements-dev.txt / .env.example
 ├── tests/                # schemas, risk engine, providers, reports, API flows
-├── docs/                 # architecture + Qwen integration plan
+├── docs/                 # architecture, Qwen integration guide, sample-report.pdf (synthetic demo data)
 ├── README.md
 └── .gitignore
 ```
@@ -177,10 +178,10 @@ The Vite dev server proxies `/api/*` to port 8000, so no CORS friction during de
 All configuration lives in `.env` (see `backend/.env.example`). Never commit real secrets.
 
 ```ini
-AI_PROVIDER=demo              # demo | openai (any OpenAI-compatible endpoint; qwen planned)
+AI_PROVIDER=demo              # demo | qwen | openai | openai-compatible
 AI_API_KEY=                   # required when AI_PROVIDER != demo
-AI_BASE_URL=                  # e.g. https://dashscope-compatible-endpoint/v1 (for Qwen later)
-AI_MODEL=                     # e.g. qwen-max
+AI_BASE_URL=                  # optional for qwen; defaults to the DashScope compatible-mode endpoint
+AI_MODEL=                     # e.g. qwen-plus; required when AI_PROVIDER != demo
 AI_TIMEOUT_SECONDS=45
 AI_MAX_FOLLOW_UP_QUESTIONS=4
 
@@ -194,9 +195,13 @@ LOG_LEVEL=INFO
 ## Demo mode
 
 With `AI_PROVIDER=demo`, the `DemoAIProvider` produces **deterministic, clearly synthetic**
-analyses from keyword rules so the entire product flow works offline. Every demo response is
-prefixed `[DEMO OUTPUT]`, the UI shows a persistent **DEMO MODE** chip, and results are labeled
-"DEMO OUTPUT — SYNTHETIC". Demo mode must never be presented as real medical output.
+analyses from keyword rules so the entire product flow works offline with zero credentials.
+The header shows a persistent **DEMO MODE** chip and the results page renders a demo notice;
+stored summaries keep a `[DEMO OUTPUT]` prefix for auditability, which the UI strips for
+display. Demo mode must never be presented as real medical output.
+
+A bundled synthetic lab report is available at `docs/sample-report.pdf` for demonstrating the
+report-reading feature without any real patient data.
 
 ## AI provider architecture
 
@@ -209,10 +214,13 @@ class AIProvider(ABC):
     def explain_medical_report(self, report_text, findings) -> str
 ```
 
-Selection is environment-driven (`PROVIDER_REGISTRY` in `factory.py`). Adding Qwen means adding
-one class and one registry entry — no application code changes. Responses must pass the Pydantic
-`AnalysisResultSchema`; fenced/embedded JSON is tolerated by the safe parser, but garbage becomes a
-controlled `502 ai_invalid_response`, never raw model output in the UI.
+Selection is environment-driven (`PROVIDER_REGISTRY` in `factory.py`). `qwen` is a registered
+first-class provider: `QwenProvider` talks to Alibaba Cloud DashScope's OpenAI-compatible
+endpoint and falls back to the default DashScope base URL when `AI_BASE_URL` is blank, so only
+`AI_API_KEY` and `AI_MODEL` are required to switch from demo to real Qwen. Adding a new vendor
+means adding one class and one registry entry — no application code changes. Responses must pass
+the Pydantic `AnalysisResultSchema`; fenced/embedded JSON is tolerated by the safe parser, but
+garbage becomes a controlled `502 ai_invalid_response`, never raw model output in the UI.
 
 ## API overview
 
@@ -250,17 +258,23 @@ Covered cases include:
 5. **Malformed AI response** — controlled `502` envelope, raw output never leaks
 6. Schema validation, CSV symptom parsing, oversized/unsupported uploads, profile bounds, and more.
 
-Current status: **67 passed, 0 failed.**
+Current status: **73 passed, 0 failed.**
 
 ## Medical safety limitations
 
 - Not a diagnosis, not a medical device, not certified for clinical use.
 - Red-flag patterns catch *obvious* emergency signals only; absence of flags ≠ absence of danger.
-- Report parsing handles plain-text PDF labs; scanned documents fail clearly rather than guessing.
+- Report parsing handles plain-text PDF labs in `Name: value (lo-hi)` or whitespace-column
+  layouts; whitespace-column rows are only accepted when a reference range is present, so
+  ordinary prose is never mistaken for lab data. Scanned documents fail clearly rather than
+  guessing.
 - The demo provider is intentionally simplistic and exists purely to exercise the workflow.
 - All outputs carry persistent disclaimers and cautious phrasing.
 
-## Future Alibaba Cloud / Qwen integration plan
+## Alibaba Cloud / Qwen integration
 
-Qwen will be integrated as the production AI provider. See
-[docs/qwen-integration.md](docs/qwen-integration.md) for the exact steps.
+`QwenProvider` is implemented and registered (`backend/app/services/ai/qwen_provider.py`).
+To enable it, set `AI_PROVIDER=qwen` with your DashScope `AI_API_KEY` and `AI_MODEL`
+(e.g. `qwen-plus`) in `.env` — `AI_BASE_URL` defaults to the DashScope international
+compatible-mode endpoint when left blank. See
+[docs/qwen-integration.md](docs/qwen-integration.md) for details.
