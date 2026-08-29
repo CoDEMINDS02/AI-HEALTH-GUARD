@@ -19,7 +19,9 @@ class Settings(BaseSettings):
 
     database_url: str = "sqlite:///./healthguard.db"
 
-    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    # Default to no explicit origins. Same-origin deployments (e.g. Vercel Services)
+    # do not need CORS. Local development should set CORS_ORIGINS in .env.
+    cors_origins: str = ""
 
     ai_provider: str = "demo"
     ai_api_key: str = ""
