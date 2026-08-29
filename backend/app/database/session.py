@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 
 from app.core.config import get_settings
 from app.database.base import Base
@@ -13,15 +14,15 @@ def get_engine():
     if _engine is None:
         settings = get_settings()
         url = settings.database_url
-        kwargs = {"pool_pre_ping": True, "future": True}
+        kwargs = {"future": True}
         if url.startswith("sqlite"):
+            kwargs["pool_pre_ping"] = True
             kwargs["connect_args"] = {"check_same_thread": False}
         else:
-            # PostgreSQL connection pool settings suitable for a single-process deployment.
-            # Supabase enforces SSL by default; psycopg3 enables it automatically.
-            kwargs["pool_size"] = 5
-            kwargs["max_overflow"] = 10
-            kwargs["pool_timeout"] = 30
+            # Serverless (Vercel): use NullPool so each invocation gets a fresh
+            # connection and releases it on completion. This avoids idle pooled
+            # connections holding open Supabase Transaction Pooler slots.
+            kwargs["poolclass"] = NullPool
         _engine = create_engine(url, **kwargs)
     return _engine
 
