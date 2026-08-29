@@ -12,7 +12,6 @@ venv/
 .env.local
 *.env
 !.env.example
-!frontend/.env.production
 
 # Databases
 *.db
