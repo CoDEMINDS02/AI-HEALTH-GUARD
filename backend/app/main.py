@@ -13,10 +13,13 @@ from app.database.session import init_db
 
 
 def _cors_origins() -> list[str]:
-    # Read directly from os.environ so Railway env vars are always picked up,
-    # even if pydantic-settings caching or .env file lookup causes a miss.
     raw = os.environ.get("CORS_ORIGINS", "") or get_settings().cors_origins
     return [o.strip() for o in raw.split(",") if o.strip()]
+
+
+# Regex that matches any https://*.vercel.app subdomain so the Vercel frontend
+# is always allowed regardless of which preview/production URL is used.
+_VERCEL_ORIGIN_REGEX = r"https://[a-zA-Z0-9\-]+(\.vercel\.app)"
 
 logger = get_logger(__name__)
 
@@ -44,15 +47,16 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    origins = _cors_origins()
-    if origins:
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=origins,
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
+    # Always allow vercel.app origins via regex so the frontend works without
+    # requiring CORS_ORIGINS to be set. Explicit origins are added on top.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origins(),
+        allow_origin_regex=_VERCEL_ORIGIN_REGEX,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     app.include_router(health.router)
     app.include_router(profiles.router)
