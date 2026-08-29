@@ -15,6 +15,20 @@ def _error_payload(code: str, message: str, details=None) -> dict:
     return payload
 
 
+def _cors_headers(request: Request) -> dict:
+    # FastAPI exception handlers bypass CORSMiddleware, so we must attach
+    # the Allow-Origin header manually. Without it the browser blocks the
+    # error response and shows a misleading "network error" instead of the
+    # actual HTTP status code.
+    origin = request.headers.get("origin")
+    if not origin:
+        return {}
+    return {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Credentials": "true",
+    }
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
@@ -22,6 +36,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=exc.status_code,
             content=_error_payload(exc.code, exc.message),
+            headers=_cors_headers(request),
         )
 
     @app.exception_handler(RequestValidationError)
@@ -33,6 +48,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=422,
             content=_error_payload("validation_error", "Some provided values are invalid.", details),
+            headers=_cors_headers(request),
         )
 
     @app.exception_handler(Exception)
@@ -41,4 +57,5 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=500,
             content=_error_payload("internal_error", "An unexpected error occurred. Please try again."),
+            headers=_cors_headers(request),
         )
