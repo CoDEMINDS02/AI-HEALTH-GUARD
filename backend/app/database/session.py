@@ -42,7 +42,16 @@ def get_session_factory():
 def init_db() -> None:
     import app.models  # noqa: F401
 
-    Base.metadata.create_all(bind=get_engine())
+    settings = get_settings()
+    if settings.database_url.startswith("sqlite"):
+        # Auto-create tables for local development and tests.
+        Base.metadata.create_all(bind=get_engine())
+    else:
+        # Production PostgreSQL (e.g., Supabase): schema must be created via
+        # migrations or the SQL script in docs/supabase-schema.sql. Do NOT run
+        # DDL on the application connection, especially not on Supabase's
+        # Transaction Pooler (port 6543), which does not support DDL reliably.
+        pass
 
 
 def reset_engine() -> None:

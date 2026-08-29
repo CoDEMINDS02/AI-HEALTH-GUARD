@@ -18,7 +18,7 @@ async function request(path, { method = 'GET', body, formData } = {}) {
       body: formData ?? (body ? JSON.stringify(body) : undefined),
     })
   } catch {
-    throw new ApiError('Could not reach the server. Is the backend running on port 8000?', 0, 'network_error')
+    throw new ApiError('Could not reach the server. Please check your connection and try again.', 0, 'network_error')
   }
 
   if (response.status === 204) return null

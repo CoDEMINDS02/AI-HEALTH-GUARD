@@ -17,13 +17,7 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI):
     settings = get_settings()
     setup_logging()
-    try:
-        init_db()
-    except Exception as exc:
-        # On Vercel serverless, a database startup failure must not crash the
-        # function before the health endpoint can respond. The real connection
-        # error is preserved in logs so the DATABASE_URL can be fixed.
-        logger.exception("Database initialization failed: %s", exc)
+    init_db()
     if settings.is_demo_mode:
         logger.warning("Starting in DEMO MODE. %s", DEMO_NOTICE_TEXT)
     else:

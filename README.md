@@ -83,8 +83,8 @@ and injects explicit "seek urgent care" guidance.
   any `/chat/completions` endpoint (see [docs/qwen-integration.md](docs/qwen-integration.md))
 - **Reports:** pypdf text extraction + regex lab-value normalization
   (`Name: value (lo-hi)` and whitespace-column layouts)
-- **Database:** SQLite via SQLAlchemy ORM
-- **Tests:** pytest + FastAPI TestClient (73 tests)
+- **Database:** SQLite for local development; Supabase PostgreSQL for production
+- **Tests:** pytest + FastAPI TestClient (74 tests)
 
 ## Project structure
 
@@ -149,11 +149,19 @@ The app starts fully working with `AI_PROVIDER=demo` — no keys needed.
 
 ### Database initialization
 
-The SQLite database (`healthguard.db`) is created automatically at startup. To force it manually:
+**Local development:** the SQLite database (`healthguard.db`) is created automatically at startup.
 
 ```bash
 python -c "from app.database.session import init_db; init_db()"
 ```
+
+**Production (Supabase/PostgreSQL):** run the schema script once in Supabase SQL Editor:
+
+```sql
+-- docs/supabase-schema.sql
+```
+
+The application does not run DDL on the production connection because Supabase's Transaction Pooler (port 6543) does not support schema changes reliably.
 
 ### Frontend
 
@@ -175,22 +183,62 @@ The Vite dev server proxies `/api/*` to port 8000, so no CORS friction during de
 
 ## Environment variables
 
-All configuration lives in `.env` (see `backend/.env.example`). Never commit real secrets.
+All configuration lives in environment variables (see `backend/.env.example` and `frontend/.env.example`). Never commit real secrets.
+
+### Frontend (Vercel)
 
 ```ini
+VITE_API_BASE_URL=/api
+```
+
+### Backend (Vercel)
+
+```ini
+APP_NAME=AI HealthGuard API
+ENVIRONMENT=production
+LOG_LEVEL=INFO
+
+# Supabase Transaction Pooler (port 6543) for serverless application queries
+DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST:6543/postgres
+
 AI_PROVIDER=demo              # demo | qwen | openai | openai-compatible
 AI_API_KEY=                   # required when AI_PROVIDER != demo
-AI_BASE_URL=                  # optional for qwen; defaults to the DashScope compatible-mode endpoint
+AI_BASE_URL=https://dashscope-intl.aliyuncs.com/compatible-mode/v1
 AI_MODEL=                     # e.g. qwen-plus; required when AI_PROVIDER != demo
 AI_TIMEOUT_SECONDS=45
 AI_MAX_FOLLOW_UP_QUESTIONS=4
 
-DATABASE_URL=sqlite:///./healthguard.db
-
-CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+# Only your deployed Vercel frontend origin in production
+CORS_ORIGINS=https://your-app.vercel.app
 UPLOAD_MAX_BYTES=10485760
-LOG_LEVEL=INFO
 ```
+
+### Local development
+
+```ini
+DATABASE_URL=sqlite:///./healthguard.db
+CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+AI_PROVIDER=demo
+```
+
+## Vercel deployment
+
+1. Push the repository to GitHub.
+2. Create a new project in Vercel and import the GitHub repository.
+3. Vercel should auto-detect **Services** from `vercel.json`:
+   - Frontend: Vite, rooted at `frontend/`
+   - Backend: FastAPI, rooted at `backend/`, entrypoint `app.main:app`
+4. Add the environment variables above in Project Settings.
+5. Run the schema in `docs/supabase-schema.sql` in the Supabase SQL Editor.
+6. Deploy.
+
+| Vercel setting | Value |
+|---|---|
+| Root Directory | `./` (repo root) |
+| Framework Preset | Services (auto-detected) |
+| Build Command | auto-detected per service |
+| Output Directory | auto-detected per service |
+| Install Command | auto-detected per service |
 
 ## Demo mode
 
