@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -9,6 +10,13 @@ from app.core.config import get_settings
 from app.core.constants import DEMO_NOTICE_TEXT
 from app.core.logging import get_logger, setup_logging
 from app.database.session import init_db
+
+
+def _cors_origins() -> list[str]:
+    # Read directly from os.environ so Railway env vars are always picked up,
+    # even if pydantic-settings caching or .env file lookup causes a miss.
+    raw = os.environ.get("CORS_ORIGINS", "") or get_settings().cors_origins
+    return [o.strip() for o in raw.split(",") if o.strip()]
 
 logger = get_logger(__name__)
 
@@ -36,10 +44,11 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    if settings.cors_origin_list:
+    origins = _cors_origins()
+    if origins:
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=settings.cors_origin_list,
+            allow_origins=origins,
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],
