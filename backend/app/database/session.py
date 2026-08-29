@@ -16,6 +16,12 @@ def get_engine():
         kwargs = {"pool_pre_ping": True, "future": True}
         if url.startswith("sqlite"):
             kwargs["connect_args"] = {"check_same_thread": False}
+        else:
+            # PostgreSQL connection pool settings suitable for a single-process deployment.
+            # Supabase enforces SSL by default; psycopg3 enables it automatically.
+            kwargs["pool_size"] = 5
+            kwargs["max_overflow"] = 10
+            kwargs["pool_timeout"] = 30
         _engine = create_engine(url, **kwargs)
     return _engine
 
