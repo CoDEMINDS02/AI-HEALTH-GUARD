@@ -312,6 +312,15 @@ export default function ReportPage() {
             />
 
             <div className="btn-row">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                aria-label="Go back to previous step"
+                onClick={() => navigate('/follow-up')}
+              >
+                ← Back
+              </button>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               <button className="btn btn-secondary" onClick={() => navigate('/analyze')}>
                 Skip — I don&apos;t have a report
               </button>
@@ -322,6 +331,7 @@ export default function ReportPage() {
               >
                 {file ? 'Upload & read report' : 'Select a file first'}
               </button>
+              </div>
             </div>
           </>
         )}
@@ -346,7 +356,15 @@ export default function ReportPage() {
         </div>
       )}
 
-      <div className="btn-row btn-row-end" style={{ marginBottom: 24 }}>
+      <div className="btn-row" style={{ marginBottom: 24 }}>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          aria-label="Go back to previous step"
+          onClick={() => navigate('/follow-up')}
+        >
+          ← Back
+        </button>
         <button
           className="btn btn-primary"
           onClick={() => navigate('/analyze')}

@@ -6,16 +6,20 @@ import { useFlow } from '../context/FlowContext.jsx'
 
 export default function SymptomsPage() {
   const navigate = useNavigate()
-  const { sessionId, setQuestions } = useFlow()
+  const { sessionId, setQuestions, symptomDraft, setSymptomDraft } = useFlow()
 
-  const [primary, setPrimary] = useState('')
-  const [description, setDescription] = useState('')
-  const [duration, setDuration] = useState('')
-  const [severity, setSeverity] = useState(5)
-  const [onset, setOnset] = useState('gradual')
-  const [additional, setAdditional] = useState('')
+  const [primary, setPrimary] = useState(symptomDraft?.primary ?? '')
+  const [description, setDescription] = useState(symptomDraft?.description ?? '')
+  const [duration, setDuration] = useState(symptomDraft?.duration ?? '')
+  const [severity, setSeverity] = useState(symptomDraft?.severity ?? 5)
+  const [onset, setOnset] = useState(symptomDraft?.onset ?? 'gradual')
+  const [additional, setAdditional] = useState(symptomDraft?.additional ?? '')
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
+
+  function updateDraft(field, value) {
+    setSymptomDraft({ primary, description, duration, severity, onset, additional, [field]: value })
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -55,8 +59,8 @@ export default function SymptomsPage() {
       <div className="card">
         <h2>What are you experiencing?</h2>
         <p style={{ color: 'var(--text-2)' }}>
-          Describe your symptoms in your own words. Example: “Fever, headache and weakness for 3
-          days.”
+          Describe your symptoms in your own words. Example: "Fever, headache and weakness for 3
+          days."
         </p>
 
         {error && <div className="error-box" role="alert">{error}</div>}
@@ -66,19 +70,22 @@ export default function SymptomsPage() {
             <div className="form-section-title">Your symptoms</div>
             <div className="field">
               <label htmlFor="primary">Primary symptoms <span className="hint">(comma separated)</span></label>
-              <input id="primary" type="text" value={primary} onChange={(e) => setPrimary(e.target.value)}
+              <input id="primary" type="text" value={primary}
+                     onChange={(e) => { setPrimary(e.target.value); updateDraft('primary', e.target.value) }}
                      placeholder="e.g. fever, headache" required />
             </div>
 
             <div className="field">
               <label htmlFor="description">Describe what you are feeling</label>
-              <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)}
+              <textarea id="description" value={description}
+                        onChange={(e) => { setDescription(e.target.value); updateDraft('description', e.target.value) }}
                         placeholder="When did it start? What does it feel like? Anything that makes it better or worse?" />
             </div>
 
             <div className="field">
               <label htmlFor="additional">Additional symptoms <span className="hint">(comma separated, optional)</span></label>
-              <input id="additional" type="text" value={additional} onChange={(e) => setAdditional(e.target.value)}
+              <input id="additional" type="text" value={additional}
+                     onChange={(e) => { setAdditional(e.target.value); updateDraft('additional', e.target.value) }}
                      placeholder="e.g. chills, sore throat" />
             </div>
           </div>
@@ -88,12 +95,14 @@ export default function SymptomsPage() {
             <div className="form-grid">
               <div className="field">
                 <label htmlFor="duration">Duration</label>
-                <input id="duration" type="text" value={duration} onChange={(e) => setDuration(e.target.value)}
+                <input id="duration" type="text" value={duration}
+                       onChange={(e) => { setDuration(e.target.value); updateDraft('duration', e.target.value) }}
                        placeholder="e.g. 3 days" />
               </div>
               <div className="field">
                 <label htmlFor="onset">Onset</label>
-                <select id="onset" value={onset} onChange={(e) => setOnset(e.target.value)}>
+                <select id="onset" value={onset}
+                        onChange={(e) => { setOnset(e.target.value); updateDraft('onset', e.target.value) }}>
                   <option value="sudden">Sudden</option>
                   <option value="gradual">Gradual</option>
                 </select>
@@ -106,7 +115,7 @@ export default function SymptomsPage() {
               </label>
               <div className="range-wrap">
                 <input id="severity" type="range" min="1" max="10" value={severity}
-                       onChange={(e) => setSeverity(e.target.value)}
+                       onChange={(e) => { setSeverity(e.target.value); updateDraft('severity', e.target.value) }}
                        aria-valuetext={`${severity} out of 10`} />
                 <span className="severity-value">{severity}/10</span>
               </div>
@@ -117,7 +126,15 @@ export default function SymptomsPage() {
             </div>
           </div>
 
-          <div className="btn-row btn-row-end">
+          <div className="btn-row">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              aria-label="Go back to previous step"
+              onClick={() => navigate('/profile')}
+            >
+              ← Back
+            </button>
             <button className="btn btn-primary" type="submit" disabled={busy}>
               {busy ? 'Preparing questions…' : 'Continue → Follow-up Questions'}
             </button>

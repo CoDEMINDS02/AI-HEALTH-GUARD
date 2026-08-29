@@ -4,20 +4,25 @@ const FlowContext = createContext(null)
 
 const STORAGE_KEY = 'healthguard-flow'
 
+const EMPTY_STATE = {
+  sessionId: null,
+  profileId: null,
+  questions: [],
+  reportInfo: null,
+  lastAnalysisId: null,
+  profileDraft: null,
+  symptomDraft: null,
+  followUpAnswers: {},
+}
+
 function loadInitial() {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw)
+    if (raw) return { ...EMPTY_STATE, ...JSON.parse(raw) }
   } catch {
     /* ignore corrupted state */
   }
-  return {
-    sessionId: null,
-    profileId: null,
-    questions: [],
-    reportInfo: null,
-    lastAnalysisId: null,
-  }
+  return { ...EMPTY_STATE }
 }
 
 export function FlowProvider({ children }) {
@@ -32,7 +37,12 @@ export function FlowProvider({ children }) {
   }, [flow])
 
   const startSession = useCallback((profileId, sessionId) => {
-    setFlow({ sessionId, profileId, questions: [], reportInfo: null, lastAnalysisId: null })
+    setFlow((prev) => ({
+      ...EMPTY_STATE,
+      sessionId,
+      profileId,
+      profileDraft: prev.profileDraft,
+    }))
   }, [])
 
   const setQuestions = useCallback((questions) => {
@@ -47,13 +57,35 @@ export function FlowProvider({ children }) {
     setFlow((prev) => ({ ...prev, lastAnalysisId: id }))
   }, [])
 
+  const setProfileDraft = useCallback((profileDraft) => {
+    setFlow((prev) => ({ ...prev, profileDraft }))
+  }, [])
+
+  const setSymptomDraft = useCallback((symptomDraft) => {
+    setFlow((prev) => ({ ...prev, symptomDraft }))
+  }, [])
+
+  const setFollowUpAnswers = useCallback((followUpAnswers) => {
+    setFlow((prev) => ({ ...prev, followUpAnswers }))
+  }, [])
+
   const reset = useCallback(() => {
-    setFlow({ sessionId: null, profileId: null, questions: [], reportInfo: null, lastAnalysisId: null })
+    setFlow({ ...EMPTY_STATE })
   }, [])
 
   const value = useMemo(
-    () => ({ ...flow, startSession, setQuestions, setReportInfo, setLastAnalysisId, reset }),
-    [flow, startSession, setQuestions, setReportInfo, setLastAnalysisId, reset],
+    () => ({
+      ...flow,
+      startSession,
+      setQuestions,
+      setReportInfo,
+      setLastAnalysisId,
+      setProfileDraft,
+      setSymptomDraft,
+      setFollowUpAnswers,
+      reset,
+    }),
+    [flow, startSession, setQuestions, setReportInfo, setLastAnalysisId, setProfileDraft, setSymptomDraft, setFollowUpAnswers, reset],
   )
 
   return <FlowContext.Provider value={value}>{children}</FlowContext.Provider>

@@ -7,9 +7,9 @@ import { useFlow } from '../context/FlowContext.jsx'
 
 export default function FollowUpPage() {
   const navigate = useNavigate()
-  const { sessionId, questions, setQuestions } = useFlow()
+  const { sessionId, questions, setQuestions, followUpAnswers, setFollowUpAnswers } = useFlow()
 
-  const [answers, setAnswers] = useState({})
+  const [answers, setAnswers] = useState(followUpAnswers ?? {})
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(questions.length === 0)
@@ -33,6 +33,12 @@ export default function FollowUpPage() {
     [questions, answers],
   )
   const progress = questions.length > 0 ? Math.round((answeredCount / questions.length) * 100) : 0
+
+  function handleAnswerChange(q, value) {
+    const updated = { ...answers, [q]: value }
+    setAnswers(updated)
+    setFollowUpAnswers(updated)
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -68,9 +74,19 @@ export default function FollowUpPage() {
             <div className="empty-icon" aria-hidden="true">💬</div>
             <h3>No questions needed</h3>
             <p>Your symptoms were detailed enough that no clarifying questions are required.</p>
-            <button className="btn btn-primary" onClick={() => navigate('/report')}>
-              Continue → Medical Report
-            </button>
+            <div className="btn-row">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                aria-label="Go back to previous step"
+                onClick={() => navigate('/symptoms')}
+              >
+                ← Back
+              </button>
+              <button className="btn btn-primary" onClick={() => navigate('/report')}>
+                Continue → Medical Report
+              </button>
+            </div>
           </div>
         )}
 
@@ -97,7 +113,7 @@ export default function FollowUpPage() {
                       id={`q-${i}`}
                       type="text"
                       value={answers[q] ?? ''}
-                      onChange={(e) => setAnswers((prev) => ({ ...prev, [q]: e.target.value }))}
+                      onChange={(e) => handleAnswerChange(q, e.target.value)}
                       placeholder="Type your answer… (optional)"
                     />
                   </div>
@@ -106,7 +122,12 @@ export default function FollowUpPage() {
             </div>
 
             <div className="btn-row">
-              <button type="button" className="btn btn-secondary" onClick={() => navigate('/symptoms')}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                aria-label="Go back to previous step"
+                onClick={() => navigate('/symptoms')}
+              >
                 ← Back
               </button>
               <button className="btn btn-primary" type="submit" disabled={busy}>
