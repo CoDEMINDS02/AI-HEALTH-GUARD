@@ -45,7 +45,8 @@ export const api = {
 
   submitSymptoms: (symptoms) => request('/symptoms', { method: 'POST', body: symptoms }),
 
-  generateFollowUp: (sessionId) => request('/follow-up', { method: 'POST', body: { session_id: sessionId } }),
+  generateFollowUp: (sessionId, language = 'en') =>
+    request('/follow-up', { method: 'POST', body: { session_id: sessionId, language } }),
   submitFollowUpAnswers: (sessionId, answers) =>
     request('/follow-up/answers', { method: 'POST', body: { session_id: sessionId, answers } }),
 

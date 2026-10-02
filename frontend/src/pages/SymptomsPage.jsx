@@ -3,10 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import Stepper from '../components/Stepper.jsx'
 import { api } from '../services/api.js'
 import { useFlow } from '../context/FlowContext.jsx'
+import { useLang } from '../context/LanguageContext.jsx'
+
+const normalizeCommas = (text) => text.replace(/\u060C/g, ',')
 
 export default function SymptomsPage() {
   const navigate = useNavigate()
   const { sessionId, setQuestions, symptomDraft, setSymptomDraft } = useFlow()
+  const { t, lang } = useLang()
 
   const [primary, setPrimary] = useState(symptomDraft?.primary ?? '')
   const [description, setDescription] = useState(symptomDraft?.description ?? '')
@@ -29,19 +33,19 @@ export default function SymptomsPage() {
       return
     }
     if (!primary.trim()) {
-      setError('Please enter at least one primary symptom.')
+      setError(t('symNeedOne'))
       return
     }
     setBusy(true)
     try {
       await api.submitSymptoms({
         session_id: sessionId,
-        primary_symptoms: primary,
+        primary_symptoms: normalizeCommas(primary),
         description,
         duration_text: duration || 'not specified',
         severity: Number(severity),
         onset,
-        additional_symptoms: additional,
+        additional_symptoms: normalizeCommas(additional),
       })
       const followUp = await api.generateFollowUp(sessionId)
       setQuestions(followUp.questions ?? [])
@@ -53,75 +57,75 @@ export default function SymptomsPage() {
     }
   }
 
+  const backArrow = lang === 'ur' ? '\u2192' : '\u2190'
+  const nextArrow = lang === 'ur' ? '\u2190' : '\u2192'
+
   return (
     <div className="fade-in">
       <Stepper current={1} />
       <div className="card">
-        <h2>What are you experiencing?</h2>
-        <p style={{ color: 'var(--text-2)' }}>
-          Describe your symptoms in your own words. Example: "Fever, headache and weakness for 3
-          days."
-        </p>
+        <h2>{t('symTitle')}</h2>
+        <p style={{ color: 'var(--text-2)' }}>{t('symIntro')}</p>
 
         {error && <div className="error-box" role="alert">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-section">
-            <div className="form-section-title">Your symptoms</div>
+            <div className="form-section-title">{t('symYour')}</div>
             <div className="field">
-              <label htmlFor="primary">Primary symptoms <span className="hint">(comma separated)</span></label>
+              <label htmlFor="primary">{t('symPrimary')} <span className="hint">{t('profileCommaSep')}</span></label>
               <input id="primary" type="text" value={primary}
                      onChange={(e) => { setPrimary(e.target.value); updateDraft('primary', e.target.value) }}
-                     placeholder="e.g. fever, headache" required />
+                     placeholder={t('symPrimaryPh')} required />
             </div>
 
             <div className="field">
-              <label htmlFor="description">Describe what you are feeling</label>
+              <label htmlFor="description">{t('symDescribe')}</label>
               <textarea id="description" value={description}
                         onChange={(e) => { setDescription(e.target.value); updateDraft('description', e.target.value) }}
-                        placeholder="When did it start? What does it feel like? Anything that makes it better or worse?" />
+                        placeholder={t('symDescribePh')} />
             </div>
 
             <div className="field">
-              <label htmlFor="additional">Additional symptoms <span className="hint">(comma separated, optional)</span></label>
+              <label htmlFor="additional">{t('symAdditional')} <span className="hint">{t('symCommaOptional')}</span></label>
               <input id="additional" type="text" value={additional}
                      onChange={(e) => { setAdditional(e.target.value); updateDraft('additional', e.target.value) }}
-                     placeholder="e.g. chills, sore throat" />
+                     placeholder={t('symAdditionalPh')} />
             </div>
           </div>
 
           <div className="form-section">
-            <div className="form-section-title">Details</div>
+            <div className="form-section-title">{t('symDetails')}</div>
             <div className="form-grid">
               <div className="field">
-                <label htmlFor="duration">Duration</label>
+                <label htmlFor="duration">{t('symDuration')}</label>
                 <input id="duration" type="text" value={duration}
                        onChange={(e) => { setDuration(e.target.value); updateDraft('duration', e.target.value) }}
-                       placeholder="e.g. 3 days" />
+                       placeholder={t('symDurationPh')} />
               </div>
               <div className="field">
-                <label htmlFor="onset">Onset</label>
+                <label htmlFor="onset">{t('symOnset')}</label>
                 <select id="onset" value={onset}
                         onChange={(e) => { setOnset(e.target.value); updateDraft('onset', e.target.value) }}>
-                  <option value="sudden">Sudden</option>
-                  <option value="gradual">Gradual</option>
+                  <option value="sudden">{t('symSudden')}</option>
+                  <option value="gradual">{t('symGradual')}</option>
                 </select>
               </div>
             </div>
 
             <div className="field">
               <label htmlFor="severity">
-                Severity <span className="hint">(1 = barely noticeable · 10 = unbearable)</span>
+                {t('symSeverity')} <span className="hint">{t('symSeverityHint')}</span>
               </label>
               <div className="range-wrap">
                 <input id="severity" type="range" min="1" max="10" value={severity}
                        onChange={(e) => { setSeverity(e.target.value); updateDraft('severity', e.target.value) }}
-                       aria-valuetext={`${severity} out of 10`} />
+                       aria-valuetext={`${severity}/10`} />
                 <span className="severity-value">{severity}/10</span>
               </div>
               <div className="range-labels" aria-hidden="true">
-                <span>Mild</span>
-                <span>Severe</span>
+                <span>{t('symMild')}</span>
+                <span>{t('symSevere')}</span>
               </div>
             </div>
           </div>
@@ -130,13 +134,13 @@ export default function SymptomsPage() {
             <button
               type="button"
               className="btn btn-secondary"
-              aria-label="Go back to previous step"
+              aria-label={t('profileBackAria')}
               onClick={() => navigate('/profile')}
             >
-              ← Back
+              {backArrow} {t('profileBack')}
             </button>
             <button className="btn btn-primary" type="submit" disabled={busy}>
-              {busy ? 'Preparing questions…' : 'Continue → Follow-up Questions'}
+              {busy ? t('symPreparing') : `${t('profileContinue')} ${nextArrow} ${t('symFollowUp')}`}
             </button>
           </div>
         </form>

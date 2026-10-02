@@ -4,9 +4,14 @@ import Loader from '../components/Loader.jsx'
 import Stepper from '../components/Stepper.jsx'
 import { api } from '../services/api.js'
 import { useFlow } from '../context/FlowContext.jsx'
+import { useLang } from '../context/LanguageContext.jsx'
+
+// Yaad rakhta hai ke aakhri baar kis session + language mein sawal bane the
+let lastGeneratedKey = ''
 
 export default function FollowUpPage() {
   const navigate = useNavigate()
+  const { t, lang } = useLang()
   const { sessionId, questions, setQuestions, followUpAnswers, setFollowUpAnswers } = useFlow()
 
   const [answers, setAnswers] = useState(followUpAnswers ?? {})
@@ -19,14 +24,35 @@ export default function FollowUpPage() {
       navigate('/profile')
       return
     }
-    if (questions.length === 0) {
-      api
-        .generateFollowUp(sessionId)
-        .then((data) => setQuestions(data.questions ?? []))
-        .catch((err) => setError(err.message))
-        .finally(() => setLoading(false))
+    const key = `${sessionId}:${lang}`
+    if (questions.length > 0 && lastGeneratedKey === key) {
+      setLoading(false)
+      return
     }
-  }, [sessionId, questions.length, navigate, setQuestions])
+
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    api
+      .generateFollowUp(sessionId, lang)
+      .then((data) => {
+        if (cancelled) return
+        setQuestions(data.questions ?? [])
+        setAnswers({})
+        setFollowUpAnswers({})
+        lastGeneratedKey = key
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.message)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [sessionId, lang, navigate, setQuestions])
 
   const answeredCount = useMemo(
     () => questions.filter((q) => (answers[q] ?? '').trim()).length,
@@ -59,32 +85,29 @@ export default function FollowUpPage() {
     <div className="fade-in">
       <Stepper current={2} />
       <div className="card">
-        <h2>A few follow-up questions</h2>
-        <p style={{ color: 'var(--text-2)' }}>
-          These targeted questions help the assessment reflect what matters. You may skip any
-          question.
-        </p>
+        <h2>{t('fuTitle')}</h2>
+        <p style={{ color: 'var(--text-2)' }}>{t('fuIntro')}</p>
 
         {error && <div className="error-box" role="alert">{error}</div>}
 
-        {loading && <Loader message="Preparing your questions…" />}
+        {loading && <Loader message={t('fuPreparing')} />}
 
         {!loading && questions.length === 0 && !error && (
           <div className="empty-state">
             <div className="empty-icon" aria-hidden="true">💬</div>
-            <h3>No questions needed</h3>
-            <p>Your symptoms were detailed enough that no clarifying questions are required.</p>
+            <h3>{t('fuNoneTitle')}</h3>
+            <p>{t('fuNoneText')}</p>
             <div className="btn-row">
               <button
                 type="button"
                 className="btn btn-secondary"
-                aria-label="Go back to previous step"
+                aria-label={t('fuBackAria')}
                 onClick={() => navigate('/symptoms')}
               >
-                ← Back
+                {t('fuBack')}
               </button>
               <button className="btn btn-primary" onClick={() => navigate('/report')}>
-                Continue → Medical Report
+                {t('fuContinue')}
               </button>
             </div>
           </div>
@@ -98,7 +121,9 @@ export default function FollowUpPage() {
               aria-valuemin={0}
               aria-valuemax={questions.length}
               aria-valuenow={answeredCount}
-              aria-label={`${answeredCount} of ${questions.length} questions answered`}
+              aria-label={t('fuProgressAria')
+                .replace('{done}', answeredCount)
+                .replace('{total}', questions.length)}
             >
               <div className="followup-progress-bar" style={{ width: `${progress}%` }} />
             </div>
@@ -106,15 +131,19 @@ export default function FollowUpPage() {
             <div className="q-card-list">
               {questions.map((q, i) => (
                 <div className="q-card" key={q}>
-                  <div className="q-index">Question {i + 1} of {questions.length}</div>
+                  <div className="q-index">
+                    {t('fuQuestionOf')
+                      .replace('{n}', i + 1)
+                      .replace('{total}', questions.length)}
+                  </div>
                   <div className="field q-item" style={{ marginBottom: 0 }}>
-                    <label htmlFor={`q-${i}`} style={{ fontSize: 14.5 }}>{q}</label>
+                    <label htmlFor={`q-${i}`} dir="auto" style={{ fontSize: 14.5, display: 'block' }}>{q}</label>
                     <input
                       id={`q-${i}`}
                       type="text"
                       value={answers[q] ?? ''}
                       onChange={(e) => handleAnswerChange(q, e.target.value)}
-                      placeholder="Type your answer… (optional)"
+                      placeholder={t('fuPlaceholder')}
                     />
                   </div>
                 </div>
@@ -125,13 +154,13 @@ export default function FollowUpPage() {
               <button
                 type="button"
                 className="btn btn-secondary"
-                aria-label="Go back to previous step"
+                aria-label={t('fuBackAria')}
                 onClick={() => navigate('/symptoms')}
               >
-                ← Back
+                {t('fuBack')}
               </button>
               <button className="btn btn-primary" type="submit" disabled={busy}>
-                {busy ? 'Saving…' : 'Continue → Medical Report'}
+                {busy ? t('fuSaving') : t('fuContinue')}
               </button>
             </div>
           </form>

@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import Stepper from '../components/Stepper.jsx'
 import { api } from '../services/api.js'
 import { useFlow } from '../context/FlowContext.jsx'
+import { useLang } from '../context/LanguageContext.jsx'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
   const { startSession, profileDraft, setProfileDraft } = useFlow()
+  const { t, lang } = useLang()
 
   const [age, setAge] = useState(profileDraft?.age ?? '')
   const [sex, setSex] = useState(profileDraft?.sex ?? 'prefer_not_to_say')
@@ -17,7 +19,7 @@ export default function ProfilePage() {
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
 
-  const toList = (text) => text.split(',').map((s) => s.trim()).filter(Boolean)
+  const toList = (text) => text.split(/[,\u060C]/).map((s) => s.trim()).filter(Boolean)
 
   function updateDraft(field, value) {
     setProfileDraft({ age, sex, conditions, allergies, medications, history, [field]: value })
@@ -27,7 +29,7 @@ export default function ProfilePage() {
     e.preventDefault()
     setError(null)
     if (!age || Number(age) < 1 || Number(age) > 120) {
-      setError('Please enter a valid age between 1 and 120.')
+      setError(t('profileAgeError'))
       return
     }
     setBusy(true)
@@ -49,65 +51,71 @@ export default function ProfilePage() {
     }
   }
 
+  const backArrow = lang === 'ur' ? '\u2192' : '\u2190'
+  const nextArrow = lang === 'ur' ? '\u2190' : '\u2192'
+
   return (
     <div className="fade-in">
       <Stepper current={0} />
       <div className="card">
-        <h2>Tell us about yourself</h2>
-        <p style={{ color: 'var(--text-2)' }}>
-          A little context helps tailor the assessment. No name, address, or contact details —
-          this information stays on your device.
-        </p>
+        <h2>{t('profileTitle')}</h2>
+        <p style={{ color: 'var(--text-2)' }}>{t('profileIntro')}</p>
 
         {error && <div className="error-box" role="alert">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-section">
-            <div className="form-section-title">About you</div>
+            <div className="form-section-title">{t('profileAboutYou')}</div>
             <div className="form-grid">
               <div className="field">
-                <label htmlFor="age">Age</label>
+                <label htmlFor="age">{t('profileAge')}</label>
                 <input id="age" type="number" min="1" max="120" value={age}
                        onChange={(e) => { setAge(e.target.value); updateDraft('age', e.target.value) }}
-                       placeholder="e.g. 34" required />
+                       placeholder={t('profileAgePlaceholder')} required />
               </div>
               <div className="field">
-                <label htmlFor="sex">Sex / gender</label>
+                <label htmlFor="sex">{t('profileSex')}</label>
                 <select id="sex" value={sex} onChange={(e) => { setSex(e.target.value); updateDraft('sex', e.target.value) }}>
-                  <option value="female">Female</option>
-                  <option value="male">Male</option>
-                  <option value="other">Other</option>
-                  <option value="prefer_not_to_say">Prefer not to say</option>
+                  <option value="female">{t('profileFemale')}</option>
+                  <option value="male">{t('profileMale')}</option>
+                  <option value="other">{t('profileOther')}</option>
+                  <option value="prefer_not_to_say">{t('profilePreferNot')}</option>
                 </select>
               </div>
             </div>
           </div>
 
           <div className="form-section">
-            <div className="form-section-title">Medical background <span className="hint" style={{ textTransform: 'none', letterSpacing: 0 }}>(all optional)</span></div>
+            <div className="form-section-title">
+              {t('profileMedical')}{' '}
+              <span className="hint" style={{ textTransform: 'none', letterSpacing: 0 }}>{t('profileAllOptional')}</span>
+            </div>
+            <p className="hint" style={{ marginTop: 0, marginBottom: 12 }}>
+              {t('profileLeaveEmpty')}
+            </p>
             <div className="field">
-              <label htmlFor="conditions">Known medical conditions <span className="hint">(comma separated)</span></label>
+              <label htmlFor="conditions">{t('profileConditions')} <span className="hint">{t('profileCommaSep')}</span></label>
               <input id="conditions" type="text" value={conditions}
                      onChange={(e) => { setConditions(e.target.value); updateDraft('conditions', e.target.value) }}
-                     placeholder="e.g. asthma, type 2 diabetes — or leave blank" />
+                     placeholder={t('profileConditionsPh')} />
             </div>
             <div className="field">
-              <label htmlFor="allergies">Allergies <span className="hint">(comma separated)</span></label>
+              <label htmlFor="allergies">{t('profileAllergies')} <span className="hint">{t('profileCommaSep')}</span></label>
               <input id="allergies" type="text" value={allergies}
                      onChange={(e) => { setAllergies(e.target.value); updateDraft('allergies', e.target.value) }}
-                     placeholder="e.g. penicillin, peanuts — or leave blank" />
+                     placeholder={t('profileAllergiesPh')} />
             </div>
             <div className="field">
-              <label htmlFor="medications">Current medications <span className="hint">(comma separated)</span></label>
+              <label htmlFor="medications">{t('profileMedications')} <span className="hint">{t('profileCommaSep')}</span></label>
               <input id="medications" type="text" value={medications}
                      onChange={(e) => { setMedications(e.target.value); updateDraft('medications', e.target.value) }}
-                     placeholder="e.g. metformin — or leave blank" />
+                     placeholder={t('profileMedicationsPh')} />
             </div>
             <div className="field">
-              <label htmlFor="history">Other relevant medical history <span className="hint">(optional)</span></label>
+              <label htmlFor="history">{t('profileHistory')} <span className="hint">{t('profileOptional')}</span></label>
               <textarea id="history" value={history}
                         onChange={(e) => { setHistory(e.target.value); updateDraft('history', e.target.value) }}
-                        placeholder="Surgeries, family history, recent travel…" />
+                        placeholder={t('profileHistoryPh')} />
             </div>
           </div>
 
@@ -115,13 +123,13 @@ export default function ProfilePage() {
             <button
               type="button"
               className="btn btn-secondary"
-              aria-label="Go back to previous step"
+              aria-label={t('profileBackAria')}
               onClick={() => navigate('/')}
             >
-              ← Back
+              {backArrow} {t('profileBack')}
             </button>
             <button className="btn btn-primary" type="submit" disabled={busy}>
-              {busy ? 'Saving…' : 'Continue → Symptoms'}
+              {busy ? t('profileSaving') : `${t('profileContinue')} ${nextArrow} ${t('profileSymptoms')}`}
             </button>
           </div>
         </form>

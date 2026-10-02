@@ -1,8 +1,11 @@
+import { useLang } from '../context/LanguageContext.jsx'
+
 export default function DisclaimerBanner() {
+  const { t } = useLang()
+
   return (
     <div className="disclaimer-banner" role="note">
-      AI HealthGuard provides preliminary health information and does not provide a medical
-      diagnosis or replace a qualified healthcare professional.
+      {t('disclaimerBanner')}
     </div>
   )
 }
