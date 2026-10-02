@@ -1,0 +1,65 @@
+@font-face {
+  font-family: 'Jameel Noori Nastaleeq';
+  src: url('/fonts/jameel-noori.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Urdu mode: larger type scale (Nastaleeq needs more size to stay readable) */
+html[lang='ur'] {
+  --fs-xs: 15px;
+  --fs-sm: 16.5px;
+  --fs-md: 18.5px;
+  --fs-lg: 21px;
+  --fs-xl: 25px;
+  --fs-2xl: 30px;
+  --fs-3xl: 36px;
+}
+
+html[lang='ur'] body,
+html[lang='ur'] button,
+html[lang='ur'] input,
+html[lang='ur'] select,
+html[lang='ur'] textarea {
+  font-family: 'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu', serif;
+  line-height: 2;
+}
+
+html[lang='ur'] input,
+html[lang='ur'] select,
+html[lang='ur'] textarea,
+html[lang='ur'] button {
+  font-size: var(--fs-md);
+}
+
+html[lang='ur'] h1,
+html[lang='ur'] h2,
+html[lang='ur'] h3 {
+  line-height: 1.9;
+}
+
+/* Elements that use fixed px sizes in styles.css */
+html[lang='ur'] .field label,
+html[lang='ur'] .alert,
+html[lang='ur'] .list-check,
+html[lang='ur'] .numbered-item,
+html[lang='ur'] .q-card,
+html[lang='ur'] .history-summary,
+html[lang='ur'] .loading-sub,
+html[lang='ur'] .empty-state p,
+html[lang='ur'] .report-table {
+  font-size: var(--fs-md);
+}
+
+html[lang='ur'] .hero h1 {
+  font-size: 40px;
+}
+
+html[lang='ur'] .brand-sub {
+  font-size: 14px;
+}
+
+html[lang='ur'] .feature h3 {
+  font-size: var(--fs-lg);
+}
