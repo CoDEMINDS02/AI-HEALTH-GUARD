@@ -26,6 +26,7 @@ def generate_follow_up(
     if context is None:
         raise InvalidStateError("Add your symptoms before generating follow-up questions.")
 
+    context["language"] = payload.language
     context["max_questions"] = max(2, min(6, settings.ai_max_follow_up_questions))
     questions = provider.generate_follow_up_questions(context)[: context["max_questions"]]
 

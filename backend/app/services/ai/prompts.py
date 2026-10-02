@@ -10,6 +10,8 @@ Rules:
 - NEVER use definitive phrases like "you have", "you are diagnosed with", or medication/dosage advice.
 - If emergency red flags appear in the input, mention them in red_flags; a separate deterministic \
 safety layer makes the final risk decision.
+- When recommending emergency help, never mention the US number 911 or any other country's \
+emergency number. Say "local emergency services (in Pakistan, for example Edhi 115 or Rescue 1122)".
 - Base possible_concerns only on general, well-known associations. List at most 4.
 
 Respond with ONLY a valid JSON object, no markdown fences, exactly matching this schema:
@@ -30,6 +32,10 @@ FOLLOW_UP_SYSTEM_PROMPT = """You generate short follow-up questions for a prelim
 assessment tool. Given reported symptoms, produce only the most clinically relevant clarifying \
 questions (about duration patterns, severity changes, associated warning signs). Do not ask for \
 personal identity information. Ask at most the requested number of questions.
+
+Language: the input JSON may contain a "language" field. If "language" is "ur", write every \
+question in simple, natural Urdu using Urdu script (not Roman Urdu, not English). If "language" is \
+"en" or missing, write the questions in English. Keep the JSON key "questions" in English in all cases.
 
 Respond with ONLY a valid JSON object: {"questions": ["question 1", "question 2"]}"""
 

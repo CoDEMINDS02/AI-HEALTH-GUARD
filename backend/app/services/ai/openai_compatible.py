@@ -1,3 +1,5 @@
+import time
+
 import httpx
 
 from app.core.config import Settings, get_settings
@@ -17,9 +19,12 @@ from app.services.ai.prompts import (
 
 class OpenAICompatibleProvider(AIProvider):
     """Works with any OpenAI-compatible chat/completions endpoint (OpenAI, vLLM, LM Studio,
-    DashScope/Qwen-compatible gateways, etc.)."""
+    DashScope/Qwen-compatible gateways, Gemini's OpenAI-compatible API, etc.)."""
 
     name = "openai_compatible"
+
+    RETRY_STATUSES = {429, 500, 502, 503, 504}
+    MAX_ATTEMPTS = 3
 
     def __init__(self, settings: Settings | None = None) -> None:
         settings = settings or get_settings()
@@ -48,20 +53,31 @@ class OpenAICompatibleProvider(AIProvider):
         if json_mode:
             body["response_format"] = {"type": "json_object"}
 
-        try:
-            response = httpx.post(
-                f"{self.base_url}/chat/completions",
-                headers={"Authorization": f"Bearer {self.api_key}"},
-                json=body,
-                timeout=self.timeout,
-            )
-        except httpx.TimeoutException as exc:
-            raise AITimeoutError("The AI service did not respond in time. Please try again.") from exc
-        except httpx.HTTPError as exc:
-            raise AIProviderError("Could not reach the AI service. Please try again later.") from exc
+        response = None
+        for attempt in range(1, self.MAX_ATTEMPTS + 1):
+            try:
+                response = httpx.post(
+                    f"{self.base_url}/chat/completions",
+                    headers={"Authorization": f"Bearer {self.api_key}"},
+                    json=body,
+                    timeout=self.timeout,
+                )
+            except httpx.TimeoutException as exc:
+                raise AITimeoutError("The AI service did not respond in time. Please try again.") from exc
+            except httpx.HTTPError as exc:
+                if attempt == self.MAX_ATTEMPTS:
+                    raise AIProviderError("Could not reach the AI service. Please try again later.") from exc
+                time.sleep(1.5 * attempt)
+                continue
 
-        if response.status_code != 200:
-            raise AIProviderError(f"The AI service returned an error (HTTP {response.status_code}).")
+            if response.status_code in self.RETRY_STATUSES and attempt < self.MAX_ATTEMPTS:
+                time.sleep(1.5 * attempt)
+                continue
+            break
+
+        if response is None or response.status_code != 200:
+            status = response.status_code if response is not None else "unknown"
+            raise AIProviderError(f"The AI service returned an error (HTTP {status}).")
 
         try:
             data = response.json()

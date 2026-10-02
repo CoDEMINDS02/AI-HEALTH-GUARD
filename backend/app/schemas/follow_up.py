@@ -1,8 +1,11 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field, field_validator
 
 
 class FollowUpGenerateIn(BaseModel):
     session_id: str = Field(min_length=8, max_length=64)
+    language: Literal["en", "ur"] = "en"
 
 
 class FollowUpQuestionsOut(BaseModel):

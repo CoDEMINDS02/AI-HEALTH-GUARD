@@ -4,24 +4,78 @@ from app.schemas.reports import ReportFindings
 from app.services.ai.base import AIProvider
 
 
-FOLLOW_UP_RULES: list[tuple[tuple[str, ...], str]] = [
-    (("fever", "temperature", "pyrexia"), "How high has your fever been, if you have measured it?"),
-    (("cough",), "Is your cough dry, or are you bringing up phlegm?"),
-    (("headache",), "Did the headache start suddenly or gradually, and where is it located?"),
-    (("dizzy", "dizziness", "lightheaded"), "Does the dizziness happen mainly when standing up, or is it constant?"),
-    (("chest pain", "chest pressure"), "Is the chest pain present right now, and does it spread to your arm, jaw, or back?"),
-    (("shortness of breath", "breathless", "breathing"), "Are you having any difficulty breathing while resting?"),
-    (("vomit", "nausea"), "Have you been able to keep fluids down?"),
-    (("rash",), "Has the rash spread or changed in appearance recently?"),
-    (("throat", "swallow"), "Do you have difficulty swallowing or breathing through your mouth?"),
-    (("diarrhea", "loose motion"), "How many episodes of diarrhea have you had in the last 24 hours?"),
-    (("pain",), "On a scale of 1-10, has the pain changed since it started?"),
-    (("weak", "fatigue", "tired"), "Is the weakness affecting your ability to walk or do daily activities?"),
+# (keywords, English question, Urdu question)
+FOLLOW_UP_RULES: list[tuple[tuple[str, ...], str, str]] = [
+    (
+        ("fever", "temperature", "pyrexia"),
+        "How high has your fever been, if you have measured it?",
+        "اگر آپ نے بخار ناپا ہو تو وہ کتنا تیز رہا ہے؟",
+    ),
+    (
+        ("cough",),
+        "Is your cough dry, or are you bringing up phlegm?",
+        "کیا آپ کی کھانسی خشک ہے، یا بلغم کے ساتھ آتی ہے؟",
+    ),
+    (
+        ("headache",),
+        "Did the headache start suddenly or gradually, and where is it located?",
+        "کیا سر درد اچانک شروع ہوا یا آہستہ آہستہ، اور یہ سر کے کس حصے میں ہے؟",
+    ),
+    (
+        ("dizzy", "dizziness", "lightheaded"),
+        "Does the dizziness happen mainly when standing up, or is it constant?",
+        "کیا چکر زیادہ تر کھڑے ہونے پر آتے ہیں، یا مسلسل رہتے ہیں؟",
+    ),
+    (
+        ("chest pain", "chest pressure"),
+        "Is the chest pain present right now, and does it spread to your arm, jaw, or back?",
+        "کیا سینے کا درد اس وقت بھی موجود ہے، اور کیا یہ بازو، جبڑے یا کمر تک پھیلتا ہے؟",
+    ),
+    (
+        ("shortness of breath", "breathless", "breathing"),
+        "Are you having any difficulty breathing while resting?",
+        "کیا آرام کی حالت میں بھی آپ کو سانس لینے میں دشواری ہو رہی ہے؟",
+    ),
+    (
+        ("vomit", "nausea"),
+        "Have you been able to keep fluids down?",
+        "کیا آپ پانی اور دوسرے مائعات پیٹ میں رکھ پا رہے ہیں؟",
+    ),
+    (
+        ("rash",),
+        "Has the rash spread or changed in appearance recently?",
+        "کیا جلد کے دانے حال ہی میں پھیلے ہیں یا ان کی شکل بدلی ہے؟",
+    ),
+    (
+        ("throat", "swallow"),
+        "Do you have difficulty swallowing or breathing through your mouth?",
+        "کیا آپ کو نگلنے میں دشواری ہے یا منہ سے سانس لینا پڑ رہا ہے؟",
+    ),
+    (
+        ("diarrhea", "loose motion"),
+        "How many episodes of diarrhea have you had in the last 24 hours?",
+        "پچھلے 24 گھنٹوں میں آپ کو کتنی بار دست آئے؟",
+    ),
+    (
+        ("pain",),
+        "On a scale of 1-10, has the pain changed since it started?",
+        "1 سے 10 کے پیمانے پر، شروع ہونے کے بعد سے درد میں کوئی تبدیلی آئی ہے؟",
+    ),
+    (
+        ("weak", "fatigue", "tired"),
+        "Is the weakness affecting your ability to walk or do daily activities?",
+        "کیا کمزوری آپ کے چلنے یا روزمرہ کام کرنے میں رکاوٹ بن رہی ہے؟",
+    ),
 ]
 
 GENERIC_TAIL_QUESTIONS = [
     "Have your symptoms been getting better, worse, or staying the same?",
     "Are you currently taking any medication for these symptoms?",
+]
+
+GENERIC_TAIL_QUESTIONS_UR = [
+    "کیا آپ کی علامات بہتر ہو رہی ہیں، بگڑ رہی ہیں، یا ویسی ہی ہیں؟",
+    "کیا آپ ان علامات کے لیے کوئی دوا لے رہے ہیں؟",
 ]
 
 CONCERN_RULES: list[tuple[tuple[str, ...], str, str]] = [
@@ -69,14 +123,20 @@ class DemoAIProvider(AIProvider):
     name = "demo"
 
     def generate_follow_up_questions(self, symptom_context: dict) -> list[str]:
+        use_urdu = symptom_context.get("language") == "ur"
         text = self._context_text(symptom_context)
-        questions = [q for keywords, q in FOLLOW_UP_RULES if any(k in text for k in keywords)]
-        for generic in GENERIC_TAIL_QUESTIONS:
+        questions = [
+            (q_ur if use_urdu else q_en)
+            for keywords, q_en, q_ur in FOLLOW_UP_RULES
+            if any(k in text for k in keywords)
+        ]
+        generic_questions = GENERIC_TAIL_QUESTIONS_UR if use_urdu else GENERIC_TAIL_QUESTIONS
+        for generic in generic_questions:
             if len(questions) >= 4:
                 break
             if generic not in questions:
                 questions.append(generic)
-        return questions[: max(2, min(6, len(questions)))] or list(GENERIC_TAIL_QUESTIONS)[:2]
+        return questions[: max(2, min(6, len(questions)))] or list(generic_questions)[:2]
 
     def analyze_health_information(self, payload: dict) -> AnalysisResultSchema:
         profile = payload.get("health_profile") or {}

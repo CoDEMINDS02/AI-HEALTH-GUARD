@@ -29,7 +29,9 @@ RED_FLAG_RULES: list[RedFlagRule] = [
         "Seek urgent medical attention immediately.",
         [
             r"\bcan(?:'|no)?t\s+breathe\b",
-            r"\b(?:severe|serious)\s+(?:difficulty|trouble|problems?)\s+breathing\b",
+            r"\b(?:severe|serious)\s+(?:difficulty|trouble|problems?)\s+(?:in\s+)?breathing\b",
+            r"\b(?:difficulty|trouble)\s+(?:in\s+)?breathing\b",
+            r"\bhard\s+to\s+breathe\b",
             r"\bstruggling\s+to\s+breathe\b",
             r"\bgasping\b(?:\s+for\s+(?:air|breath))?",
             r"\bchoking\b",
@@ -47,6 +49,17 @@ RED_FLAG_RULES: list[RedFlagRule] = [
             r"\b(?:severe|intense|worst)\s+chest\s+(?:pain|pressure)\b",
             r"\bchest\s+(?:pain|pressure)\b.{0,40}\b(?:sweating|cold\s+sweat|nausea|shortness\s+of\s+breath)\b",
             r"\bfeels?\s+like\s+(?:an?\s+)?elephant\s+(?:is\s+)?on\s+(?:my|the)\s+chest\b",
+        ],
+    ),
+    _rule(
+        "high_fever",
+        "Very high fever",
+        "A very high fever needs prompt medical assessment.",
+        [
+            r"\b(?:very|extremely|dangerously)\s+high\s+(?:fever|temperature)\b",
+            r"\bsevere\s+fever\b",
+            r"\b10[3-7](?:\.\d)?\s*(?:degrees?\s*)?f\b",
+            r"\b(?:39\.[5-9]|4[0-2](?:\.\d)?)\s*(?:degrees?\s*)?c\b",
         ],
     ),
     _rule(
